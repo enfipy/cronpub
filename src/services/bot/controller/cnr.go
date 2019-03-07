@@ -3,6 +3,8 @@ package controller
 import (
 	"github.com/enfipy/cronpub/src/models"
 	"github.com/enfipy/cronpub/src/services/bot"
+
+	"github.com/google/uuid"
 )
 
 type botController struct {
@@ -15,8 +17,8 @@ func NewController(botUsecase bot.Usecase) bot.Controller {
 	}
 }
 
-func (cnr *botController) SavePost(post *models.Post) {
-	cnr.botUsecase.SavePost(post)
+func (cnr *botController) SavePost(post *models.Post) uuid.UUID {
+	return cnr.botUsecase.SavePost(post)
 }
 
 func (cnr *botController) GetRandomPost() *models.Post {

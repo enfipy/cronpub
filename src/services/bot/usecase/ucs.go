@@ -22,7 +22,7 @@ func NewUsecase(pool *redis.Pool, locker *locker.Locker) bot.Usecase {
 	}
 }
 
-func (ucs *botUsecase) SavePost(post *models.Post) {
+func (ucs *botUsecase) SavePost(post *models.Post) uuid.UUID {
 	conn := ucs.pool.Get()
 	defer conn.Close()
 
@@ -33,8 +33,11 @@ func (ucs *botUsecase) SavePost(post *models.Post) {
 	data, err := post.EncodeBinary()
 	helpers.PanicOnError(err)
 
-	_, err = conn.Do("SET", uuid.New(), data)
+	id := uuid.New()
+	_, err = conn.Do("SET", id, data)
 	helpers.PanicOnError(err)
+
+	return id
 }
 
 func (ucs *botUsecase) GetRandomPost() *models.Post {
@@ -60,6 +63,9 @@ func (ucs *botUsecase) GetRandomPost() *models.Post {
 
 	post := new(models.Post)
 	post.DecodeBinary(res.([]byte))
+
+	_, err = conn.Do("DEL", id)
+	helpers.PanicOnError(err)
 
 	return post
 }
