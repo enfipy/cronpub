@@ -5,9 +5,10 @@ ARG PROJECT=godev
 
 WORKDIR /go/src/${PROJECT}/
 
+RUN apk add git gcc musl-dev
+
 COPY go.mod go.sum ./
-RUN apk add git gcc musl-dev && \
-    go mod download && \
+RUN go mod download && \
     go get -u github.com/enfipy/gouto
 
 COPY settings.yaml /

@@ -1,8 +1,13 @@
 module github.com/enfipy/cronpub
 
 require (
+	github.com/BrandonRomano/iso8601 v0.1.0 // indirect
+	github.com/BrandonRomano/wrecker v0.1.5 // indirect
+	github.com/carrot/go-pinterest v2.1.1+incompatible
 	github.com/cockroachdb/apd v1.1.0 // indirect
+	github.com/enfipy/locker v1.0.0
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/uuid v1.1.1
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.3.0+incompatible
 	github.com/kr/pretty v0.1.0 // indirect

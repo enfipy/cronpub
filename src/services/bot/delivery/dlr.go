@@ -3,7 +3,7 @@ package delivery
 import (
 	"github.com/enfipy/cronpub/src/config"
 
-	botService "github.com/enfipy/cronpub/src/services/bot"
+	"github.com/enfipy/cronpub/src/services/bot"
 
 	"github.com/robfig/cron"
 	"github.com/tucnak/telebot"
@@ -11,20 +11,25 @@ import (
 
 type BotServer struct {
 	Config        *config.Config
-	BotController botService.Controller
+	BotController bot.Controller
 
 	BotInstance  *telebot.Bot
 	CronInstance *cron.Cron
 }
 
-func NewDelivery(cnfg *config.Config, cnrBot botService.Controller, botInstance *telebot.Bot, cronInstance *cron.Cron) *BotServer {
-	return &BotServer{
+func NewDelivery(cnfg *config.Config, cnrBot bot.Controller, botInstance *telebot.Bot, cronInstance *cron.Cron) *BotServer {
+	server := &BotServer{
 		Config:        cnfg,
 		BotController: cnrBot,
 
 		BotInstance:  botInstance,
 		CronInstance: cronInstance,
 	}
+
+	server.SetupTelegram()
+	server.SetupCron()
+
+	return server
 }
 
 func (server *BotServer) SetupCron() {
