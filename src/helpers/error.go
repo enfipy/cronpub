@@ -7,3 +7,11 @@ func PanicOnError(err error) {
 		log.Fatal(err)
 	}
 }
+
+func RecoverWithLog() {
+	if rec := recover(); rec != nil {
+		err := rec.(error)
+		msg := err.Error()
+		log.Print(msg)
+	}
+}

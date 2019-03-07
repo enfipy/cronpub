@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"net/http"
+	"time"
 
 	"github.com/enfipy/cronpub/src/config"
 	"github.com/enfipy/cronpub/src/helpers"
@@ -9,6 +11,9 @@ import (
 	botController "github.com/enfipy/cronpub/src/services/bot/controller"
 	botDelivery "github.com/enfipy/cronpub/src/services/bot/delivery"
 	botUsecase "github.com/enfipy/cronpub/src/services/bot/usecase"
+
+	scraperController "github.com/enfipy/cronpub/src/services/scraper/controller"
+	scraperDelivery "github.com/enfipy/cronpub/src/services/scraper/delivery"
 
 	"github.com/enfipy/locker"
 	"github.com/robfig/cron"
@@ -23,10 +28,17 @@ func InitServices(cnfg *config.Config) (start, close func()) {
 	pool := helpers.InitRedis(cnfg.RedisAddress, cnfg.RedisNetwork)
 	botInstance := helpers.InitTelegram(cnfg.Settings.Telegram.BotToken)
 	cronInstance := cron.New()
+	httpClient := &http.Client{
+		Timeout: time.Second * 5,
+	}
 
 	ucsBot := botUsecase.NewUsecase(pool, locker)
+
 	cnrBot := botController.NewController(ucsBot)
-	botDelivery.NewDelivery(cnfg, cnrBot, botInstance, cronInstance)
+	cnrScraper := scraperController.NewController(httpClient)
+
+	scraperDelivery.NewDelivery(cnfg, cnrScraper, cnrBot, cronInstance)
+	botDelivery.NewDelivery(cnfg, cnrBot, cnrScraper, botInstance, cronInstance)
 
 	start = func() {
 		cronInstance.Start()

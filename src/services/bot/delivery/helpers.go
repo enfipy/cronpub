@@ -24,6 +24,14 @@ func (server *BotServer) handle(logic func(msg *telebot.Message)) func(msg *tele
 func (server *BotServer) getSendable(post *models.Post) telebot.Sendable {
 	var sendable telebot.Sendable
 
+	if post.FileLink != "" {
+		sendable = &telebot.Photo{
+			File:    telebot.FromURL(post.FileLink),
+			Caption: server.Config.Settings.Telegram.Caption,
+		}
+		return sendable
+	}
+
 	file, err := server.BotInstance.FileByID(post.TelegramFileID)
 	helpers.PanicOnError(err)
 
@@ -31,19 +39,28 @@ func (server *BotServer) getSendable(post *models.Post) telebot.Sendable {
 	case models.FileType_GIF:
 		sendable = &telebot.Document{
 			File:    file,
-			Caption: "@epiocus",
+			Caption: server.Config.Settings.Telegram.Caption,
 		}
 	case models.FileType_VIDEO:
 		sendable = &telebot.Video{
 			File:    file,
-			Caption: "@epiocus",
+			Caption: server.Config.Settings.Telegram.Caption,
 		}
 	case models.FileType_IMAGE:
 		sendable = &telebot.Photo{
 			File:    file,
-			Caption: "@epiocus",
+			Caption: server.Config.Settings.Telegram.Caption,
 		}
 	}
 
 	return sendable
+}
+
+func (server *BotServer) sendPost(post *models.Post) {
+	sendable := server.getSendable(post)
+	chat := &telebot.Chat{
+		Username: server.Config.Settings.Telegram.ChatName,
+		Type:     telebot.ChatChannel,
+	}
+	server.BotInstance.Send(chat, sendable)
 }

@@ -8,6 +8,7 @@ import (
 type Post struct {
 	FileType       FileType
 	TelegramFileID string
+	FileLink       string
 }
 
 func (post *Post) EncodeBinary() ([]byte, error) {

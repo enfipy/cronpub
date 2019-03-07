@@ -69,3 +69,34 @@ func (ucs *botUsecase) GetRandomPost() *models.Post {
 
 	return post
 }
+
+func (ucs *botUsecase) CountPosts() int64 {
+	conn := ucs.pool.Get()
+	defer conn.Close()
+
+	key := "posts"
+	ucs.locker.RLock(key)
+	defer ucs.locker.RUnlock(key)
+
+	res, err := conn.Do("DBSIZE")
+	helpers.PanicOnError(err)
+
+	return res.(int64)
+}
+
+func (ucs *botUsecase) RemovePost(id uuid.UUID) bool {
+	conn := ucs.pool.Get()
+	defer conn.Close()
+
+	key := "posts"
+	ucs.locker.Lock(key)
+	defer ucs.locker.Unlock(key)
+
+	res, err := conn.Do("DEL", id)
+	helpers.PanicOnError(err)
+
+	if res.(int64) <= 0 {
+		return false
+	}
+	return true
+}

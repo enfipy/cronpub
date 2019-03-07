@@ -2,8 +2,13 @@ package delivery
 
 import (
 	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/enfipy/cronpub/src/helpers"
 
 	"github.com/enfipy/cronpub/src/models"
+	"github.com/google/uuid"
 
 	"github.com/tucnak/telebot"
 )
@@ -13,6 +18,9 @@ func (server *BotServer) SetupTelegram() {
 	server.BotInstance.Handle(telebot.OnVideo, server.handle(server.SaveVideo))
 	server.BotInstance.Handle(telebot.OnDocument, server.handle(server.SaveGif))
 	server.BotInstance.Handle("send", server.handle(server.Send))
+	server.BotInstance.Handle("fetch", server.handle(server.Fetch))
+	server.BotInstance.Handle("count", server.handle(server.Count))
+	server.BotInstance.Handle(telebot.OnText, server.handle(server.OnText))
 }
 
 func (server *BotServer) SaveImage(msg *telebot.Message) {
@@ -50,14 +58,53 @@ func (server *BotServer) Send(_ *telebot.Message) {
 	if randomPost == nil {
 		panic(errors.New("no posts"))
 	}
-	server.SendPost(randomPost)
+	server.sendPost(randomPost)
 }
 
-func (server *BotServer) SendPost(post *models.Post) {
-	sendable := server.getSendable(post)
-	chat := &telebot.Chat{
-		Username: server.Config.Settings.Telegram.ChatName,
-		Type:     telebot.ChatChannel,
+func (server *BotServer) Fetch(_ *telebot.Message) {
+	scraperLinks := server.Config.Settings.Scraper.Links
+	if len(scraperLinks) <= 0 {
+		panic(errors.New("no links"))
 	}
-	server.BotInstance.Send(chat, sendable)
+
+	for _, link := range scraperLinks {
+		links := server.ScraperController.FetchFromReddit(link)
+
+		for _, fileLink := range links {
+			post := &models.Post{
+				FileType: models.FileType_IMAGE,
+				FileLink: fileLink,
+			}
+			server.BotController.SavePost(post)
+		}
+	}
+}
+
+func (server *BotServer) Count(msg *telebot.Message) {
+	count := server.BotController.CountPosts()
+	result := strconv.Itoa(int(count)) + " posts"
+	server.BotInstance.Reply(msg, result)
+}
+
+func (server *BotServer) OnText(msg *telebot.Message) {
+	del := strings.Split(msg.Text, "rm ")
+	if len(del) >= 2 {
+		server.Remove(msg, del[1])
+	}
+}
+
+func (server *BotServer) Remove(msg *telebot.Message, delID string) {
+	id, err := uuid.Parse(delID)
+	helpers.PanicOnError(err)
+
+	isDeleted := server.BotController.RemovePost(id)
+
+	var res string
+	if isDeleted {
+		res = "Post removed"
+	} else {
+		res = "Post not found"
+	}
+
+	server.BotInstance.Reply(msg, res)
 }

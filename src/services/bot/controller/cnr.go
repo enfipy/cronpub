@@ -24,3 +24,11 @@ func (cnr *botController) SavePost(post *models.Post) uuid.UUID {
 func (cnr *botController) GetRandomPost() *models.Post {
 	return cnr.botUsecase.GetRandomPost()
 }
+
+func (cnr *botController) CountPosts() int64 {
+	return cnr.botUsecase.CountPosts()
+}
+
+func (cnr *botController) RemovePost(id uuid.UUID) bool {
+	return cnr.botUsecase.RemovePost(id)
+}

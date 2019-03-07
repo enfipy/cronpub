@@ -9,4 +9,6 @@ import (
 type Controller interface {
 	SavePost(post *models.Post) uuid.UUID
 	GetRandomPost() *models.Post
+	CountPosts() int64
+	RemovePost(id uuid.UUID) bool
 }
