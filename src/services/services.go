@@ -2,12 +2,15 @@ package services
 
 import (
 	"errors"
-	"log"
 
 	"github.com/enfipy/cronpub/src/config"
 	"github.com/enfipy/cronpub/src/helpers"
 
-	cron "github.com/robfig/cron"
+	botController "github.com/enfipy/cronpub/src/services/bot/controller"
+	botDelivery "github.com/enfipy/cronpub/src/services/bot/delivery"
+	botUsecase "github.com/enfipy/cronpub/src/services/bot/usecase"
+
+	"github.com/robfig/cron"
 )
 
 func InitServices(cnfg *config.Config) (start, close func()) {
@@ -19,9 +22,20 @@ func InitServices(cnfg *config.Config) (start, close func()) {
 	botInstance := helpers.InitTelegram(cnfg.Settings.Telegram.BotToken)
 	cronInstance := cron.New()
 
-	log.Print(pool, botInstance, cronInstance)
+	ucsBot := botUsecase.NewUsecase(pool)
+	cnrBot := botController.NewController(ucsBot)
+	dlrBot := botDelivery.NewDelivery(cnfg, cnrBot, botInstance, cronInstance)
 
-	start = func() {}
-	close = func() {}
+	dlrBot.SetupTelegram()
+	dlrBot.SetupCron()
+
+	start = func() {
+		cronInstance.Start()
+		botInstance.Start()
+	}
+	close = func() {
+		cronInstance.Stop()
+		botInstance.Stop()
+	}
 	return
 }

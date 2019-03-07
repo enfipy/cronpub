@@ -3,7 +3,7 @@ package helpers
 import (
 	"time"
 
-	telebot "github.com/tucnak/telebot"
+	"github.com/tucnak/telebot"
 )
 
 func InitTelegram(token string) *telebot.Bot {
