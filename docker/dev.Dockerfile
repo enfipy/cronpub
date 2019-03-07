@@ -11,6 +11,4 @@ COPY go.mod go.sum ./
 RUN go mod download && \
     go get -u github.com/enfipy/gouto
 
-COPY settings.yaml /
-
 CMD ["gouto", "-dir=src"]

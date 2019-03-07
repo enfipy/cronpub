@@ -17,6 +17,7 @@ services:
       dockerfile: ./docker/dev.Dockerfile
     volumes:
       - ./src:/go/src/cronpub/src
+      - ./settings.yaml:/settings.yaml
     environment:
       APP_ENV: development
       REDIS_ADDRESS: redis:6379
