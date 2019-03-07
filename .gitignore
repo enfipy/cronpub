@@ -19,5 +19,5 @@
 # OSX
 .DS_STORE
 
-# Secret settings
+# Settings to configure `cronpub`
 settings.yaml

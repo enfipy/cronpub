@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://github.com/enfipy/cronpub/assets/logo.svg" width="300"/>
+  <img src="https://github.com/enfipy/cronpub/blob/master/assets/logo.svg" width="300"/>
   <p align="center" style="font-size: 0.5em">Automated publishing bot</p>
 </h1>
 
