@@ -3,11 +3,11 @@
   <p align="center" style="font-size: 0.5em">Automated publishing bot</p>
 </h1>
 
-Project `cronpub` - automated publishing bot
+Project `cronpub` - automated publishing bot based on Telegram and Redis
 
 ## Usage:
 
-To begin development:
+To begin development - alter settings file in root of the project and run:
 
 ```
 docker-compose up --build
