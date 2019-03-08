@@ -1,6 +1,8 @@
 package delivery
 
 import (
+	"os"
+
 	"github.com/enfipy/cronpub/src/config"
 	"github.com/enfipy/cronpub/src/helpers"
 	"github.com/enfipy/cronpub/src/services/bot"
@@ -40,6 +42,8 @@ func (server *BotServer) SetupCron() {
 		server.CronInstance.AddFunc(cron, func() {
 			defer helpers.RecoverWithLog()
 			server.Send(nil)
+			// Todo: Fix lib and this line
+			os.Exit(1)
 		})
 	}
 }
