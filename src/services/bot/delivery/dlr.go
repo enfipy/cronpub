@@ -39,7 +39,7 @@ func (server *BotServer) SetupCron() {
 	for _, cron := range server.Config.Settings.Telegram.Crons {
 		server.CronInstance.AddFunc(cron, func() {
 			defer helpers.RecoverWithLog()
-			// server.Send(nil)
+			server.Send(nil)
 		})
 	}
 }

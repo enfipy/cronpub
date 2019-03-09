@@ -80,7 +80,7 @@ func (server *BotServer) Send(_ *telebot.Message) string {
 		panic(errors.New("no posts"))
 	}
 	server.sendPost(randomPost)
-	return ""
+	return "post sent"
 }
 
 func (server *BotServer) Fetch(_ *telebot.Message) string {
