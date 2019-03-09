@@ -38,10 +38,12 @@ func InitServices(cnfg *config.Config) (start, close func()) {
 	cnrScraper := scraperController.NewController(httpClient)
 
 	scraperDelivery.NewDelivery(cnfg, cnrScraper, cnrBot, cronInstance)
-	botDelivery.NewDelivery(cnfg, cnrBot, cnrScraper, botInstance, cronInstance)
+	dlrBot := botDelivery.NewDelivery(cnfg, cnrBot, cnrScraper, botInstance, cronInstance)
 
 	start = func() {
+		dlrBot.SetupCron()
 		cronInstance.Start()
+		dlrBot.SetupTelegram()
 	}
 	close = func() {
 		cronInstance.Stop()

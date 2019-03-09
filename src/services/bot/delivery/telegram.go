@@ -74,13 +74,16 @@ func (server *BotServer) SaveGif(msg *telebot.Message) string {
 	return id.String()
 }
 
-func (server *BotServer) Send(_ *telebot.Message) string {
+func (server *BotServer) Send(msg *telebot.Message) string {
 	randomPost := server.BotController.GetRandomPost()
 	if randomPost == nil {
 		panic(errors.New("no posts"))
 	}
 	server.sendPost(randomPost)
-	return "post sent"
+	if msg != nil {
+		return "Post sent"
+	}
+	return ""
 }
 
 func (server *BotServer) Fetch(_ *telebot.Message) string {

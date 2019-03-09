@@ -29,9 +29,6 @@ func NewDelivery(cnfg *config.Config, cnrBot bot.Controller, cnrScraper scraper.
 		CronInstance: cronInstance,
 	}
 
-	server.SetupTelegram()
-	server.SetupCron()
-
 	return server
 }
 
