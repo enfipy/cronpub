@@ -6,43 +6,64 @@ import (
 	"strings"
 
 	"github.com/enfipy/cronpub/src/helpers"
-
 	"github.com/enfipy/cronpub/src/models"
 	"github.com/google/uuid"
 
-	"github.com/tucnak/telebot"
+	telebot "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func (server *BotServer) SetupTelegram() {
-	server.BotInstance.Handle(telebot.OnPhoto, server.handle(server.SaveImage))
-	server.BotInstance.Handle(telebot.OnVideo, server.handle(server.SaveVideo))
-	server.BotInstance.Handle(telebot.OnDocument, server.handle(server.SaveGif))
-	server.BotInstance.Handle("send", server.handle(server.Send))
-	server.BotInstance.Handle("fetch", server.handle(server.Fetch))
-	server.BotInstance.Handle("count", server.handle(server.Count))
-	server.BotInstance.Handle(telebot.OnText, server.handle(server.OnText))
+	updateConfig := telebot.NewUpdate(0)
+	updateConfig.Timeout = 60
+
+	updatesChan, err := server.BotInstance.GetUpdatesChan(updateConfig)
+	helpers.PanicOnError(err)
+
+	for update := range updatesChan {
+		if update.Message == nil {
+			continue
+		}
+
+		switch {
+		case update.Message.Photo != nil:
+			server.handle(update.Message, server.SaveImage)
+		case update.Message.Video != nil:
+			server.handle(update.Message, server.SaveVideo)
+		case update.Message.Document != nil:
+			server.handle(update.Message, server.SaveGif)
+		case strings.Contains(update.Message.Text, "rm "):
+			server.handle(update.Message, server.Remove)
+		case strings.Contains(update.Message.Text, "send"):
+			server.handle(update.Message, server.Send)
+		case strings.Contains(update.Message.Text, "fetch"):
+			server.handle(update.Message, server.Fetch)
+		case strings.Contains(update.Message.Text, "count"):
+			server.handle(update.Message, server.Count)
+		}
+	}
 }
 
-func (server *BotServer) SaveImage(msg *telebot.Message) {
+func (server *BotServer) SaveImage(msg *telebot.Message) string {
+	photos := *msg.Photo
 	post := &models.Post{
 		FileType:       models.FileType_IMAGE,
-		TelegramFileID: msg.Photo.FileID,
+		TelegramFileID: photos[0].FileID,
 	}
 	id := server.BotController.SavePost(post)
-	server.BotInstance.Reply(msg, id.String())
+	return id.String()
 }
 
-func (server *BotServer) SaveVideo(msg *telebot.Message) {
+func (server *BotServer) SaveVideo(msg *telebot.Message) string {
 	post := &models.Post{
 		FileType:       models.FileType_VIDEO,
 		TelegramFileID: msg.Video.FileID,
 	}
 	id := server.BotController.SavePost(post)
-	server.BotInstance.Reply(msg, id.String())
+	return id.String()
 }
 
-func (server *BotServer) SaveGif(msg *telebot.Message) {
-	if msg.Document.MIME != "video/mp4" {
+func (server *BotServer) SaveGif(msg *telebot.Message) string {
+	if msg.Document.MimeType != "video/mp4" {
 		panic(errors.New("invalid format"))
 	}
 	post := &models.Post{
@@ -50,18 +71,19 @@ func (server *BotServer) SaveGif(msg *telebot.Message) {
 		TelegramFileID: msg.Document.FileID,
 	}
 	id := server.BotController.SavePost(post)
-	server.BotInstance.Reply(msg, id.String())
+	return id.String()
 }
 
-func (server *BotServer) Send(_ *telebot.Message) {
+func (server *BotServer) Send(_ *telebot.Message) string {
 	randomPost := server.BotController.GetRandomPost()
 	if randomPost == nil {
 		panic(errors.New("no posts"))
 	}
 	server.sendPost(randomPost)
+	return ""
 }
 
-func (server *BotServer) Fetch(_ *telebot.Message) {
+func (server *BotServer) Fetch(_ *telebot.Message) string {
 	scraperLinks := server.Config.Settings.Scraper.Links
 	if len(scraperLinks) <= 0 {
 		panic(errors.New("no links"))
@@ -78,23 +100,23 @@ func (server *BotServer) Fetch(_ *telebot.Message) {
 			server.BotController.SavePost(post)
 		}
 	}
+
+	return "Success"
 }
 
-func (server *BotServer) Count(msg *telebot.Message) {
+func (server *BotServer) Count(_ *telebot.Message) string {
 	count := server.BotController.CountPosts()
 	result := strconv.Itoa(int(count)) + " posts"
-	server.BotInstance.Reply(msg, result)
+	return result
 }
 
-func (server *BotServer) OnText(msg *telebot.Message) {
+func (server *BotServer) Remove(msg *telebot.Message) string {
 	del := strings.Split(msg.Text, "rm ")
-	if len(del) >= 2 {
-		server.Remove(msg, del[1])
+	if len(del) < 2 {
+		return ""
 	}
-}
 
-func (server *BotServer) Remove(msg *telebot.Message, delID string) {
-	id, err := uuid.Parse(delID)
+	id, err := uuid.Parse(del[1])
 	helpers.PanicOnError(err)
 
 	isDeleted := server.BotController.RemovePost(id)
@@ -106,5 +128,5 @@ func (server *BotServer) Remove(msg *telebot.Message, delID string) {
 		res = "Post not found"
 	}
 
-	server.BotInstance.Reply(msg, res)
+	return res
 }

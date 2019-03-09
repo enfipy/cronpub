@@ -42,11 +42,10 @@ func InitServices(cnfg *config.Config) (start, close func()) {
 
 	start = func() {
 		cronInstance.Start()
-		botInstance.Start()
 	}
 	close = func() {
 		cronInstance.Stop()
-		botInstance.Stop()
+		botInstance.StopReceivingUpdates()
 	}
 	return
 }

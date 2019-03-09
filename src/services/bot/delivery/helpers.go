@@ -4,63 +4,66 @@ import (
 	"github.com/enfipy/cronpub/src/helpers"
 	"github.com/enfipy/cronpub/src/models"
 
-	"github.com/tucnak/telebot"
+	telebot "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func (server *BotServer) handle(logic func(msg *telebot.Message)) func(msg *telebot.Message) {
-	return func(msg *telebot.Message) {
-		defer func() {
-			if rec := recover(); rec != nil {
-				err := rec.(error)
-				errorMessage := "Error: " + err.Error()
-				server.BotInstance.Reply(msg, errorMessage)
-			}
-		}()
-		// Todo: Authenticate user
-		logic(msg)
+func (server *BotServer) handle(msg *telebot.Message, handler func(msg *telebot.Message) string) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err := rec.(error)
+			errorMessage := "Error: " + err.Error()
+
+			res := telebot.NewMessage(msg.Chat.ID, errorMessage)
+			res.ReplyToMessageID = msg.MessageID
+
+			server.BotInstance.Send(res)
+		}
+	}()
+	// Todo: Authenticate user
+	result := handler(msg)
+
+	if result != "" {
+		res := telebot.NewMessage(msg.Chat.ID, result)
+		res.ReplyToMessageID = msg.MessageID
+
+		server.BotInstance.Send(res)
 	}
 }
 
-func (server *BotServer) getSendable(post *models.Post) telebot.Sendable {
-	var sendable telebot.Sendable
-
-	if post.FileLink != "" {
-		sendable = &telebot.Photo{
-			File:    telebot.FromURL(post.FileLink),
-			Caption: server.Config.Settings.Telegram.Caption,
-		}
-		return sendable
+func (server *BotServer) getChat() *telebot.Chat {
+	chatConfig := telebot.ChatConfig{
+		SuperGroupUsername: server.Config.Settings.Telegram.ChatName,
 	}
-
-	file, err := server.BotInstance.FileByID(post.TelegramFileID)
+	chat, err := server.BotInstance.GetChat(chatConfig)
 	helpers.PanicOnError(err)
-
-	switch post.FileType {
-	case models.FileType_GIF:
-		sendable = &telebot.Document{
-			File:    file,
-			Caption: server.Config.Settings.Telegram.Caption,
-		}
-	case models.FileType_VIDEO:
-		sendable = &telebot.Video{
-			File:    file,
-			Caption: server.Config.Settings.Telegram.Caption,
-		}
-	case models.FileType_IMAGE:
-		sendable = &telebot.Photo{
-			File:    file,
-			Caption: server.Config.Settings.Telegram.Caption,
-		}
-	}
-
-	return sendable
+	return &chat
 }
 
 func (server *BotServer) sendPost(post *models.Post) {
-	sendable := server.getSendable(post)
-	chat := &telebot.Chat{
-		Username: server.Config.Settings.Telegram.ChatName,
-		Type:     telebot.ChatChannel,
+	var msg telebot.Chattable
+	chat := server.getChat()
+
+	if post.FileLink != "" {
+		media := telebot.NewInputMediaPhoto(post.FileLink)
+		media.Caption = server.Config.Settings.Telegram.Caption
+		msg = telebot.NewMediaGroup(chat.ID, []interface{}{media})
+	} else {
+		switch post.FileType {
+		case models.FileType_GIF:
+			doc := telebot.NewDocumentShare(chat.ID, post.TelegramFileID)
+			doc.Caption = server.Config.Settings.Telegram.Caption
+			msg = doc
+		case models.FileType_VIDEO:
+			video := telebot.NewVideoShare(chat.ID, post.TelegramFileID)
+			video.Caption = server.Config.Settings.Telegram.Caption
+			msg = video
+		case models.FileType_IMAGE:
+			image := telebot.NewPhotoShare(chat.ID, post.TelegramFileID)
+			image.Caption = server.Config.Settings.Telegram.Caption
+			msg = image
+		}
 	}
-	server.BotInstance.Send(chat, sendable)
+
+	_, err := server.BotInstance.Send(msg)
+	helpers.PanicOnError(err)
 }

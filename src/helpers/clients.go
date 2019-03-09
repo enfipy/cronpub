@@ -1,20 +1,10 @@
 package helpers
 
-import (
-	"time"
+import telebot "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/tucnak/telebot"
-)
-
-func InitTelegram(token string) *telebot.Bot {
-	poller := &telebot.LongPoller{
-		Timeout: 0 * time.Second,
-	}
-	settings := telebot.Settings{
-		Token:  token,
-		Poller: poller,
-	}
-	botInstance, err := telebot.NewBot(settings)
+func InitTelegram(token string) *telebot.BotAPI {
+	botInstance, err := telebot.NewBotAPI(token)
 	PanicOnError(err)
+	botInstance.Debug = false
 	return botInstance
 }
