@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/enfipy/cronpub/src/helpers"
 	"github.com/enfipy/cronpub/src/models"
@@ -33,7 +34,11 @@ func (cnr *scraperController) FetchFromReddit(url string) []string {
 
 	var links []string
 	for _, post := range data.MetaData.Posts {
-		links = append(links, post.Post.Link)
+		link := post.Post.Link
+		if strings.Contains(link, ".mp4") || strings.Contains(link, ".gif") {
+			continue
+		}
+		links = append(links, link)
 	}
 
 	return links
